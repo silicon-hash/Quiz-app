@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String    @id @default(uuid()) @unique
+  name              String   
+  studyProgram      Program?
+  speciality        String?
+  workPlace         String?
+  university        String?
+  promotion         String?
+  profileCompleted  Boolean   @default(false)
+  email         String?   @unique
+  emailVerified DateTime? @map("email_verified")
+  image         String?
+  accounts          Account[]
+  sessions          Session[]
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  UserTestDetail UserTestDetail[]
+}
+
+model Admin {
+    id                String    @id @default(uuid()) @unique
+    email             String    @unique
+    password          String
+    name              String?
+    createdAt         DateTime  @default(now())
+    updatedAt         DateTime  @updatedAt
+}
+
+enum Program {
+  MEDICINE
+  PHARMACY
+  DENTISTRY
+}
+
+model Category {
+  id              String    @id @default(uuid()) @unique
+  name            String    @unique
+  question        Question[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  UserTestDetail UserTestDetail[]
+}
+
+model Question {
+  id              String    @id @default(uuid()) @unique
+  title           String
+  categoryId      String
+  question        String
+  choice          Choices[]  
+  answer          String[]  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  category        Category  @relation(fields: [categoryId], references: [id])
+
+  userTestDetails UserTestDetail[] @relation("UserTestQuestions")
+}
+
+model UserTestDetail{
+  id String @id @default(cuid()) @unique
+  userId    String
+  questions       Question[] @relation("UserTestQuestions")  // Many-to-many relation to Question
+  userAnswers     Json?
+  isTimed         Boolean  @default(false)
+  duration       Int?             
+  correctAnswers  String?
+  numberOfQuestions Int
+  isCompleted      Boolean  @default(false)  
+  categoryId     String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  category Category  @relation(fields: [categoryId],references: [id])
+  user User  @relation(fields: [userId],references: [id])
+}
+
+model Choices {
+  id              String    @id @default(uuid()) @unique
+  questionId      String
+  text            String    
+  question        Question   @relation(fields: [questionId], references: [id],onDelete: Cascade)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String  @map("user_id")
+  type               String
+  provider           String
+  providerAccountId  String  @map("provider_account_id")
+  refresh_token      String? @db.Text
+  access_token       String? @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String? @db.Text
+  session_state      String?
+ 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+ 
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  @@map("sessions")
+}
+
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+ 
+  @@unique([identifier, token])
+}
