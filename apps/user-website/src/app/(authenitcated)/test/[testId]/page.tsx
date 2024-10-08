@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useRouter, useParams } from "next/navigation";
 import { useTheme } from "@/components/context/ThemeContext";
 import TestResults from "@/src/components/TestResults/page";
+import { toast } from 'sonner';
 
 interface Question {
   id: string;
@@ -36,28 +37,43 @@ export default function TestPage() {
   const [showDialog, setShowDialog] = useState(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [showResults, setShowResults] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchQuestions = async () => {
-      try {
+      const fetchPromise = async () => {
         const response = await fetch(`/api/test/${params.testId}`);
         const data = await response.json();
-        console.log("data in test page");
-        console.log(data);
         if (data.err) {
-          console.error(data.msg);
-        } else {
-          if (data.data.isCompleted) {
-            // Redirect to test results page if the test is already completed
-            router.push(`/test/${params.testId}/results`);
-          } else {
-            setQuestions(data.data.questions);
-            setIsTimed(data.data.isTimed);
-            setDuration(data.data.duration);
-          }
+          throw new Error(data.msg);
         }
+        if (data.data.isCompleted) {
+          router.push(`/test/${params.testId}/results`);
+          throw new Error('Test already completed');
+        }
+        return data.data;
+      };
+
+      toast.promise(fetchPromise, {
+        loading: 'Fetching questions...',
+        success: (data) => {
+          setQuestions(data.questions);
+          setIsTimed(data.isTimed);
+          setDuration(data.duration);
+          return 'Questions loaded successfully';
+        },
+        error: (err) => {
+          console.error("Failed to fetch questions:", err);
+          return 'Failed to fetch questions';
+        },
+      });
+
+      try {
+        await fetchPromise();
       } catch (error) {
-        console.error("Failed to fetch questions:", error);
+        // Error is handled by toast.promise, no need for additional handling here
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -94,6 +110,8 @@ export default function TestPage() {
   const handleNextQuestion = () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex((prev) => prev + 1);
+    } else {
+      handleSubmit();
     }
   };
 
@@ -103,25 +121,43 @@ export default function TestPage() {
     }
   };
 
+  const handleSkipQuestion = () => {
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex((prev) => prev + 1);
+    }
+  };
+
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
-  if (questions.length === 0) {
-    return <div className="text-center mt-8">Loading questions...</div>;
+  if (isLoading || questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 dark:border-gray-100"></div>
+        <div className="text-center mt-4 text-xl font-semibold">Loading questions...</div>
+      </div>
+    );
   }
 
   const handleSubmit = async () => {
     try {
+      const userAnswers = questions.map(question => 
+        selectedAnswers[question.id] || []
+      );
+      console.log("userAnswers", userAnswers);
+
+      console.log(userAnswers);
+
       const response = await fetch(`/api/test/${params.testId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userAnswers: Object.values(selectedAnswers),
+          userAnswers: userAnswers,
         }),
       });
       const data = await response.json();
@@ -140,7 +176,19 @@ export default function TestPage() {
 
   const handleCloseDialog = () => {
     setShowDialog(false);
-    router.push(`/test/${params.testId}/results`);
+    
+    toast.promise(
+      new Promise((resolve) => {
+        router.push(`/test/${params.testId}/results`);
+        // Simulate a delay to show the loading state
+        setTimeout(resolve, 1000);
+      }),
+      {
+        loading: 'Loading results...',
+        success: 'Results loaded successfully',
+        error: 'Failed to load results',
+      }
+    );
   };
 
   if (questions.length === 0) {
@@ -149,17 +197,28 @@ export default function TestPage() {
 
   const currentQuestion = questions[currentQuestionIndex];
 
+  const isLastQuestion = () => currentQuestionIndex === questions.length - 1;
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl bg-white dark:bg-gray-900 text-black dark:text-white">
-      <h1 className="text-3xl font-bold mb-6 text-center bg-white dark:bg-gray-900 text-black dark:text-white p-4">
-        {category || "General"} Test
-      </h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-center">
+          {category || "General"} Test
+        </h1>
+        <button
+          className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors duration-200"
+          onClick={handleSubmit}
+        >
+          Complete Test
+        </button>
+      </div>
+      
       {isTimed && (
-        <div className="text-xl font-semibold mb-6 text-center bg-blue-200 dark:bg-blue-900 text-blue-800 dark:text-blue-200 p-3 rounded-lg">
+        <div className="text-xl font-semibold mb-6 text-center bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-100 p-3 rounded-lg">
           Time Remaining: {formatTime(duration)}
         </div>
       )}
-      {/* Add progress bar */}
+      {/* Progress bar */}
       <div className="mb-6 bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
         <div
           className="bg-blue-600 h-2.5 rounded-full"
@@ -169,7 +228,7 @@ export default function TestPage() {
         ></div>
       </div>
       <div className="bg-gray-100 dark:bg-gray-800 shadow-lg rounded-lg p-6 mb-8">
-        <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
+        <h2 className="text-2xl font-semibold mb-4">
           Question {currentQuestionIndex + 1} of {questions.length}
         </h2>
         <div className="mb-6 p-4 bg-white dark:bg-gray-700 rounded-lg shadow-inner">
@@ -178,16 +237,17 @@ export default function TestPage() {
           </p>
         </div>
         <div className="space-y-3">
-          {currentQuestion.choice.map((option) => (
+          {currentQuestion.choice.map((option, index) => (
             <button
               key={option.id}
               className={`w-full p-3 text-left border rounded-lg transition-colors duration-200 ${
                 selectedAnswers[currentQuestion?.id]?.includes(option.id)
-                  ? "bg-blue-600 dark:bg-blue-700 text-white"
+                  ? "bg-blue-600 text-white"
                   : "bg-white dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600"
               }`}
               onClick={() => handleAnswerSelect(currentQuestion.id, option.id)}
             >
+              <span className="font-bold mr-2">{String.fromCharCode(65 + index)}.</span>
               {option.text}
               <span className="float-right">
                 {selectedAnswers[currentQuestion?.id]?.includes(option.id) ? '✓' : '◯'}
@@ -196,30 +256,30 @@ export default function TestPage() {
           ))}
         </div>
       </div>
-      <div className="flex justify-between">
+      
+      {/* Navigation buttons */}
+      <div className="flex justify-between items-center mb-4">
         <button
-          className="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-400 dark:hover:bg-gray-600 px-6 py-2 rounded-lg transition-colors duration-200"
+          className="bg-blue-600 text-white hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handlePreviousQuestion}
           disabled={currentQuestionIndex === 0}
         >
           Previous
         </button>
-        {currentQuestionIndex === questions.length - 1 ? (
-          <button
-            className="bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-600 px-6 py-2 rounded-lg transition-colors duration-200"
-            onClick={handleSubmit}
-          >
-            Submit
-          </button>
-        ) : (
-          <button
-            className="bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-600 px-6 py-2 rounded-lg transition-colors duration-200"
-            onClick={handleNextQuestion}
-          >
-            Next
-          </button>
-        )}
+        <button
+          className="bg-blue-600 text-white hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors duration-200"
+          onClick={handleSkipQuestion}
+        >
+          Skip
+        </button>
+        <button
+          className="bg-blue-600 text-white hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors duration-200"
+          onClick={handleNextQuestion}
+        >
+          {isLastQuestion() ? "Submit" : "Next"}
+        </button>
       </div>
+      
       {showDialog && testResult && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full relative">

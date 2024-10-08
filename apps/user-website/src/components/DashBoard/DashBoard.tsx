@@ -92,6 +92,14 @@ export default function Home() {
     }
   };
 
+  const startExamSimulation = () => {
+    setSelectedCategory(null);
+    setQuestionCount(200);
+    setIsTimedTest(true);
+    setTestDuration(2);
+    setShowDialog(true);
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-white dark:bg-gray-900 text-black dark:text-white p-4">
       <div className="w-full max-w-3xl">
@@ -119,114 +127,123 @@ export default function Home() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg shadow-md">
-            <div className="flex items-center mb-4">
-              <svg
-                className="w-6 h-6 text-blue-500 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
+        {activeTab === "Tests" ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg shadow-md">
+              <div className="flex items-center mb-4">
+                <svg
+                  className="w-6 h-6 text-blue-500 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
+                </svg>
+                <h2 className="text-xl font-semibold">Start a test</h2>
+              </div>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Begin a new assessment
+              </p>
+              <button
+                onClick={() => setShowDialog(true)}
+                className="px-4 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded shadow hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 10V3L4 14h7v7l9-11h-7z"
-                />
-              </svg>
-              <h2 className="text-xl font-semibold">Start a test</h2>
+                Start
+              </button>
             </div>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Begin a new assessment
-            </p>
-            <button
-              onClick={() => setShowDialog(true)}
-              className="px-4 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded shadow hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-            >
-              Start
-            </button>
-          </div>
 
-          <div className="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg shadow-md">
-            <div className="flex items-center mb-4">
-              <svg
-                className="w-6 h-6 text-green-500 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
+            <div className="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg shadow-md">
+              <div className="flex items-center mb-4">
+                <svg
+                  className="w-6 h-6 text-green-500 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"
+                  />
+                </svg>
+                <h2 className="text-xl font-semibold">Exams Simulation</h2>
+              </div>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Review your Exams Simulation
+              </p>
+              <button 
+                onClick={startExamSimulation}
+                className="px-4 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded shadow hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"
-                />
-              </svg>
-              <h2 className="text-xl font-semibold">See the last test</h2>
+                Start
+              </button>
             </div>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Review your recent performance
-            </p>
-            <button className="px-4 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded shadow hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-              View
-            </button>
-          </div>
 
-          <div className="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg shadow-md">
-            <div className="flex items-center mb-4">
-              <svg
-                className="w-6 h-6 text-purple-500 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                />
-              </svg>
-              <h2 className="text-xl font-semibold">Create tests</h2>
+            <div className="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg shadow-md">
+              <div className="flex items-center mb-4">
+                <svg
+                  className="w-6 h-6 text-purple-500 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                  />
+                </svg>
+                <h2 className="text-xl font-semibold">Create tests</h2>
+              </div>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Design your own assessments
+              </p>
+              <button className="px-4 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded shadow hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                Create
+              </button>
             </div>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Design your own assessments
-            </p>
-            <button className="px-4 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded shadow hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-              Create
-            </button>
-          </div>
 
-          <div className="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg shadow-md">
-            <div className="flex items-center mb-4">
-              <svg
-                className="w-6 h-6 text-yellow-500 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <h2 className="text-xl font-semibold">Test history</h2>
+            <div className="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg shadow-md">
+              <div className="flex items-center mb-4">
+                <svg
+                  className="w-6 h-6 text-yellow-500 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <h2 className="text-xl font-semibold">Test history</h2>
+              </div>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                View past test results
+              </p>
+              <button className="px-4 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded shadow hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                History
+              </button>
             </div>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              View past test results
-            </p>
-            <button className="px-4 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded shadow hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-              History
-            </button>
           </div>
-        </div>
+        ) : (
+          <div className="text-center py-8">
+            {/* Empty content for Learnings tab */}
+          </div>
+        )}
       </div>
 
       {showDialog && (
@@ -299,7 +316,7 @@ export default function Home() {
               onClick={() => {
                 if (selectedCategory) {
                   setShowDialog(false);
-                  setShowQuestionCountDialog(true);
+                  startTest();
                 }
               }}
               className={`mt-8 w-full px-4 py-3 rounded-md transition duration-200 ease-in-out ${
@@ -309,7 +326,7 @@ export default function Home() {
               }`}
               disabled={!selectedCategory}
             >
-              Next
+              Start Exam Simulation
             </button>
           </div>
         </div>

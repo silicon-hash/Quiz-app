@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { useParams } from 'next/navigation';
 
 interface Question {
   id: string;
@@ -20,45 +22,64 @@ interface TestResultsProps {
   questions: Question[];
 }
 
-const TestResults: React.FC<TestResultsProps> = ({ testid, questions: initialQuestions }) => {
-  const [questions, setQuestions] = useState<Question[]>(initialQuestions);
+const TestResults: React.FC = () => {
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const params = useParams();
+  const testId = params.testId as string;
 
   useEffect(() => {
     const fetchTestData = async () => {
       try {
-        const response = await fetch(`/api/test/${testid}`);
+        setIsLoading(true);
+        const response = await fetch(`/api/test/${testId}`);
         const data = await response.json();
+        
         if (data.err) {
-          console.error(data.msg);
-        } else {
-          const { questions: fetchedQuestions, userAnswers } = data.data;
-          setQuestions(fetchedQuestions);
-          
-          const correctAnswers = fetchedQuestions.reduce((count: number, question: any, index: number) => {
-            const isCorrect = JSON.stringify(question.answer.sort()) === JSON.stringify(userAnswers[index].sort());
-            return count + (isCorrect ? 1 : 0);
-          }, 0);
-
-          const score = (correctAnswers / fetchedQuestions.length) * 100;
-
-          setTestResult({
-            correctAnswers,
-            score,
-            correctAnswersIds: fetchedQuestions.map((q: any) => q.answer),
-            userAnswers,
-          });
+          throw new Error(data.msg);
         }
+        
+        const { questions: fetchedQuestions, userAnswers } = data.data;
+        setQuestions(fetchedQuestions);
+        
+        const correctAnswers = fetchedQuestions.reduce((count: number, question: any, index: number) => {
+          const isCorrect = JSON.stringify(question.answer.sort()) === JSON.stringify(userAnswers[index].sort());
+          return count + (isCorrect ? 1 : 0);
+        }, 0);
+
+        const score = (correctAnswers / fetchedQuestions.length) * 100;
+
+        setTestResult({
+          correctAnswers,
+          score,
+          correctAnswersIds: fetchedQuestions.map((q: any) => q.answer),
+          userAnswers,
+        });
+
+        toast.success('Test results loaded successfully!');
       } catch (error) {
-        console.error("Failed to fetch test data:", error);
+        console.error('Failed to load test results:', error);
+        toast.error('Failed to load test results');
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchTestData();
-  }, [testid]);
+  }, [testId]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 dark:border-gray-100"></div>
+        <div className="text-center mt-4 text-xl font-semibold">Loading test results...</div>
+      </div>
+    );
+  }
 
   if (!testResult) {
-    return <div className="flex justify-center items-center h-screen">Loading...</div>;
+    return <div className="text-center mt-8">No test results available.</div>;
   }
 
   return (
