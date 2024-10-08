@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter, useParams } from "next/navigation";
 import { useTheme } from "@/components/context/ThemeContext";
 import TestResults from "@/src/components/TestResults/page";
@@ -33,18 +33,28 @@ export default function TestPage() {
   const [selectedAnswers, setSelectedAnswers] = useState<{
     [key: string]: string[];
   }>({});
+  const selectedAnswersRef = useRef<{ [key: string]: string[] }>({});
   const [duration, setDuration] = useState(0);
   const [showDialog, setShowDialog] = useState(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [remainingTime, setRemainingTime] = useState<number | null>(null);
 
-  const handleSubmit = async () => {
+  // Update the ref whenever selectedAnswers changes
+  useEffect(() => {
+    selectedAnswersRef.current = selectedAnswers;
+  }, [selectedAnswers]);
+
+  const handleSubmit = async (forcedSubmit = false) => {
     try {
-      const userAnswers = questions.map(question => 
-        selectedAnswers[question.id] || []
+      // Use the ref to get the latest answers
+      const currentSelectedAnswers = selectedAnswersRef.current;
+      
+      const answersToSubmit = questions.map(question => 
+        currentSelectedAnswers[question.id] || []
       );
-      console.log("userAnswers", userAnswers);
+      console.log("userAnswers", answersToSubmit);
 
       const response = await fetch(`/api/test/${params.testId}`, {
         method: 'POST',
@@ -52,7 +62,7 @@ export default function TestPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userAnswers: userAnswers,
+          userAnswers: answersToSubmit,
         }),
       });
       const data = await response.json();
@@ -89,7 +99,16 @@ export default function TestPage() {
         success: (data) => {
           setQuestions(data.questions);
           setIsTimed(data.isTimed);
-          setDuration(data.duration);
+          
+          if (data.isTimed) {
+            const createdAt = new Date(data.createdAt).getTime();
+            const currentTime = Date.now();
+            const elapsedSeconds = Math.floor((currentTime - createdAt) / 1000);
+            const remainingSeconds = Math.max(data.duration - elapsedSeconds, 0);
+            
+            setRemainingTime(remainingSeconds);
+          }
+          
           return 'Questions loaded successfully';
         },
         error: (err) => {
@@ -111,21 +130,21 @@ export default function TestPage() {
   }, [params.testId, router]);
 
   useEffect(() => {
-    if (isTimed) {
+    if (isTimed && remainingTime !== null) {
       const timer = setInterval(() => {
-        setDuration((prevDuration) => {
-          if (prevDuration <= 1) {
+        setRemainingTime((prevTime) => {
+          if (prevTime !== null && prevTime <= 1) {
             clearInterval(timer);
-            handleSubmit();
+            handleSubmit(true); // Force submit when time is up
             return 0;
           }
-          return prevDuration - 1;
+          return prevTime === null ? null : prevTime - 1;
         });
       }, 1000);
 
       return () => clearInterval(timer);
     }
-  }, [isTimed]);
+  }, [isTimed, remainingTime]);
 
   const handleAnswerSelect = (questionId: string, answerId: string) => {
     setSelectedAnswers((prev) => {
@@ -133,7 +152,9 @@ export default function TestPage() {
       const updatedAnswers = currentAnswers.includes(answerId)
         ? currentAnswers.filter((id) => id !== answerId)
         : [...currentAnswers, answerId];
-      return { ...prev, [questionId]: updatedAnswers };
+      const newState = { ...prev, [questionId]: updatedAnswers };
+      selectedAnswersRef.current = newState; // Update the ref
+      return newState;
     });
   };
 
@@ -157,16 +178,20 @@ export default function TestPage() {
     }
   };
 
-  const formatTime = (seconds: number) => {
+  const formatTime = (seconds: number): string => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const remainingSeconds = seconds % 60;
     
     if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
     } else {
-      return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+      return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
     }
+  };
+
+  const isAnswerSelected = (questionId: string) => {
+    return selectedAnswers[questionId] && selectedAnswers[questionId].length > 0;
   };
 
   if (isLoading || questions.length === 0) {
@@ -211,15 +236,15 @@ export default function TestPage() {
         </h1>
         <button
           className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors duration-200"
-          onClick={handleSubmit}
+          onClick={(e) => handleSubmit()}
         >
           Complete Test
         </button>
       </div>
       
-      {isTimed && (
+      {isTimed && remainingTime !== null && (
         <div className="text-xl font-semibold mb-6 text-center bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-100 p-3 rounded-lg">
-          Time Remaining: {formatTime(duration)}
+          Time Remaining: {formatTime(remainingTime)}
         </div>
       )}
       {/* Progress bar */}
@@ -277,8 +302,9 @@ export default function TestPage() {
           Skip
         </button>
         <button
-          className="bg-blue-600 text-white hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors duration-200"
+          className="bg-blue-600 text-white hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleNextQuestion}
+          disabled={!isAnswerSelected(currentQuestion.id)}
         >
           {isLastQuestion() ? "Submit" : "Next"}
         </button>
