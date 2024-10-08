@@ -296,8 +296,9 @@ export default function TestPage() {
           Previous
         </button>
         <button
-          className="bg-blue-600 text-white hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors duration-200"
+          className="bg-blue-600 text-white hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleSkipQuestion}
+          disabled={isAnswerSelected(currentQuestion.id)}
         >
           Skip
         </button>
