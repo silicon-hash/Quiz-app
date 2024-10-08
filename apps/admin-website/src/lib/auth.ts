@@ -6,8 +6,7 @@ import type { Adapter } from "next-auth/adapters";
 import CredenstialsProvider from "next-auth/providers/credentials";
 
 export const authOptions: NextAuthOptions = {
-  secret:
-    process.env.AUTH_SECRET || "m8bVR7LDvLw+dXJ5wzD9zPDnFLIopKVNvUXg/pGBcO0=",
+  secret: "m8bVR7LDvLw+dXJ5wzD9zPDnFLIopKVNvUXg/pGBcO0=",
   pages: {
     signIn: "/login",
   },

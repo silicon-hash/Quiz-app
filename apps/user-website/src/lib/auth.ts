@@ -5,19 +5,15 @@ import prisma from "@repo/db/client";
 import type { Adapter } from "next-auth/adapters";
 
 export const authOptions: NextAuthOptions = {
-  secret:
-    process.env.AUTH_SECRET || "m8bVR7LDvLw+dXJ5wzD9zPDnFLIopKVNvUXg/pGBcO0=",
+  secret: "m8bVR7LDvLw+dXJ5wzD9zPDnFLIopKVNvUXg/pGBcO0=",
   pages: {
     signIn: "/login",
   },
   providers: [
     GoogleProvider({
       clientId:
-        process.env.GOOGLE_CLIENT_ID ||
         "548624448516-9aphfvepsbtjk610eqb2tngok81kfkc9.apps.googleusercontent.com",
-      clientSecret:
-        process.env.GOOGLE_CLIENT_SECRET ||
-        "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",
+      clientSecret: "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",
       authorization: {
         params: {
           prompt: "consent",
