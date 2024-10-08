@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = "postgresql://quizapp_owner:ibeLXYD9R0od@ep-tight-dew-a15cjnhb-pooler.ap-southeast-1.aws.neon.tech/quizapp?sslmode=require"
 }
 
 model User {
