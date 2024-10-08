@@ -39,6 +39,36 @@ export default function TestPage() {
   const [showResults, setShowResults] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  const handleSubmit = async () => {
+    try {
+      const userAnswers = questions.map(question => 
+        selectedAnswers[question.id] || []
+      );
+      console.log("userAnswers", userAnswers);
+
+      const response = await fetch(`/api/test/${params.testId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userAnswers: userAnswers,
+        }),
+      });
+      const data = await response.json();
+      console.log(data);
+      if (data.err) {
+        console.error(data.msg);
+      } else {
+        console.log("Test submitted successfully:", data.data);
+        setTestResult(data.data);
+        setShowDialog(true);
+      }
+    } catch (error) {
+      console.error("Failed to submit test:", error);
+    }
+  };
+
   useEffect(() => {
     const fetchQuestions = async () => {
       const fetchPromise = async () => {
@@ -128,9 +158,15 @@ export default function TestPage() {
   };
 
   const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
     const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+    
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
+    } else {
+      return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+    }
   };
 
   if (isLoading || questions.length === 0) {
@@ -141,38 +177,6 @@ export default function TestPage() {
       </div>
     );
   }
-
-  const handleSubmit = async () => {
-    try {
-      const userAnswers = questions.map(question => 
-        selectedAnswers[question.id] || []
-      );
-      console.log("userAnswers", userAnswers);
-
-      console.log(userAnswers);
-
-      const response = await fetch(`/api/test/${params.testId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userAnswers: userAnswers,
-        }),
-      });
-      const data = await response.json();
-      console.log(data);
-      if (data.err) {
-        console.error(data.msg);
-      } else {
-        console.log("Test submitted successfully:", data.data);
-        setTestResult(data.data);
-        setShowDialog(true);
-      }
-    } catch (error) {
-      console.error("Failed to submit test:", error);
-    }
-  };
 
   const handleCloseDialog = () => {
     setShowDialog(false);
