@@ -16,8 +16,15 @@ import { useRouter } from "next/navigation";
 function NavBar() {
   const router = useRouter();
   return (
-    <div className="flex justify-between  p-4 border-b border-zinc-600 dark:bg-gray-800">
-      <div></div>
+    <div className="flex justify-between items-center p-4 border-b border-zinc-600 dark:bg-gray-800">
+      <div
+        className="cursor-pointer"
+        onClick={() => {
+          router.push("/");
+        }}
+      >
+        Logo
+      </div>
       <div className="flex justify-between gap-4">
         <ToggleMode />
         <div>

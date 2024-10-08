@@ -73,13 +73,13 @@ function LoginCard() {
           Login
         </Button>
       </form>
-      <button
+      {/* <button
         onClick={async () => {
           await createAdmin("test2@gmail.com", "12");
         }}
       >
         Create
-      </button>
+      </button> */}
     </CardContent>
   );
 }

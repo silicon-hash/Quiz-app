@@ -84,10 +84,10 @@ export const GET = async (
         select: {
           questions: {
             select: {
-              choice:true,
-              answer:true,
-              question:true,
-            }
+              choice: true,
+              answer: true,
+              question: true,
+            },
           },
           userAnswers: true,
           isCompleted: true,
@@ -131,6 +131,7 @@ export const POST = async (
 ) => {
   try {
     const { userAnswers }: UserTestPostData = await req.json();
+    console.log("asdasdasd", userAnswers);
     const userTestDetail = await prisma.userTestDetail.findUnique({
       where: {
         id: params.testid,
