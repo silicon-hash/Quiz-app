@@ -8,7 +8,8 @@ const loginRoute = "/login";
 export async function middleware(req: NextRequest) {
   const token = await getToken({
     req: req as any,
-    secret: process.env.AUTH_SECRET || "SECR3T",
+    secret:
+      process.env.AUTH_SECRET || "m8bVR7LDvLw+dXJ5wzD9zPDnFLIopKVNvUXg/pGBcO0=",
   });
 
   const { pathname } = req.nextUrl;
