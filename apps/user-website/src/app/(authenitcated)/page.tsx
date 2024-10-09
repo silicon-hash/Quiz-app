@@ -2,7 +2,7 @@
 
 import Dashboard from "@/src/components/DashBoard/DashBoard";
 
-const Home = async () => {
+const Home = () => {
   return <Dashboard />;
 };
 

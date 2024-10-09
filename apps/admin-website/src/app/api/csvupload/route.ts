@@ -19,61 +19,56 @@ export async function POST(request: NextRequest) {
     }
 
     const content = await file.text();
-    const records = parse(content, {
-      columns: true,
-      skip_empty_lines: true,
-    });
+    const records = parse(content, { columns: true, skip_empty_lines: true });
 
     for (const record of records) {
       const { question, choice1, choice2, choice3, choice4, choice5, answer } =
         record;
+      const isMultipleAnswer = answer.includes(",");
 
-      // Create the question first
       const newQuestion = await prisma.question.create({
         data: {
           title: question.substring(0, 50),
           categoryId: categoryId,
           question: question,
+          isMultipleAnswer: isMultipleAnswer,
         },
       });
 
-      // Collect all choice texts into an array, filtering out any empty ones
       const choices = [choice1, choice2, choice3, choice4, choice5].filter(
         Boolean
       );
 
-      // Store created choice IDs in an array
-      const choiceIds: string[] = [];
+      // Create each choice individually to capture IDs
+      const createdChoices = await Promise.all(
+        choices.map((choiceText) =>
+          prisma.choices.create({
+            data: {
+              questionId: newQuestion.id,
+              text: choiceText,
+            },
+          })
+        )
+      );
 
-      // Create each choice and store its ID
-      for (const choiceText of choices) {
-        const createdChoice = await prisma.choices.create({
-          data: {
-            questionId: newQuestion.id,
-            text: choiceText,
-          },
-        });
-        choiceIds.push(createdChoice.id);
-      }
-
-      const answerTexts = answer.includes(",")
-        ? answer.split(",").map((a: string) => a.trim())
+      // Process the answer field to get the correct choice IDs
+      const answerTexts = isMultipleAnswer
+        ? answer.split(",").map((a: any) => a.trim())
         : [answer];
       const correctChoiceIds = answerTexts
         .map((answerText: string) => {
-          const answerIndex = choices.indexOf(answerText);
-          return answerIndex !== -1 ? choiceIds[answerIndex] : null;
+          const matchingChoice = createdChoices.find(
+            (choice) => choice.text === answerText
+          );
+          return matchingChoice ? matchingChoice.id : null;
         })
         .filter(Boolean);
 
+      // Update the question with the correct choice IDs
       if (correctChoiceIds.length > 0) {
         await prisma.question.update({
-          where: {
-            id: newQuestion.id,
-          },
-          data: {
-            answer: correctChoiceIds, // Store the correct choice IDs as the answer
-          },
+          where: { id: newQuestion.id },
+          data: { answer: correctChoiceIds },
         });
       }
     }

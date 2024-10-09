@@ -13,6 +13,7 @@ import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { signOut } from "next-auth/react";
 import { ToggleMode } from "./ToggleButton";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 function NavBar() {
   const router = useRouter();
   return (
@@ -43,16 +44,31 @@ function NavBar() {
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="dark:bg-gray-700">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Settings</DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => {
-                  router.push("/profile");
+                  // router.push("/profile");
+                  toast.info("Coming soon");
                 }}
               >
                 Proifle
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  // router.push("/profile");
+                  toast.info("Coming soon");
+                }}
+              >
+                Create Test
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  router.push("/history");
+                }}
+              >
+                History
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem

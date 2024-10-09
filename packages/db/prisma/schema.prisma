@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://quizapp_owner:ibeLXYD9R0od@ep-tight-dew-a15cjnhb-pooler.ap-southeast-1.aws.neon.tech/quizapp?sslmode=require"
+  url      = "postgres://avnadmin:AVNS_WgHX5E9bqxQg4DEuGXN@quiz-app-iamsalaar008-ffa0.f.aivencloud.com:19771/defaultdb?sslmode=require&connection_limit=10"
 }
 
 model User {
@@ -24,6 +24,8 @@ model User {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   UserTestDetail UserTestDetail[]
+
+  @@index([id])
 }
 
 model Admin {
@@ -33,6 +35,8 @@ model Admin {
     name              String?
     createdAt         DateTime  @default(now())
     updatedAt         DateTime  @updatedAt
+
+    @@index([id])
 }
 
 enum Program {
@@ -48,6 +52,8 @@ model Category {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   UserTestDetail UserTestDetail[]
+
+  @@index([id])
 }
 
 model Question {
@@ -57,11 +63,15 @@ model Question {
   question        String
   choice          Choices[]  
   answer          String[]  
+  isMultipleAnswer Boolean   @default(false)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   category        Category  @relation(fields: [categoryId], references: [id])
-
   userTestDetails UserTestDetail[] @relation("UserTestQuestions")
+
+  @@index([id])
+  @@index([isMultipleAnswer])
+  @@index([categoryId])
 }
 
 model UserTestDetail{
@@ -77,9 +87,13 @@ model UserTestDetail{
   categoryId     String
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  testType        TestType   @default(TIMER)
+  testType        TestType   
+  
   category Category  @relation(fields: [categoryId],references: [id])
   user User  @relation(fields: [userId],references: [id])
+
+  @@index([id])
+  @@index([userId])
 }
 
 model Choices {
@@ -89,6 +103,8 @@ model Choices {
   question        Question   @relation(fields: [questionId], references: [id],onDelete: Cascade)
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
+
+  @@index([id])
 }
 
 enum TestType{

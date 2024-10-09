@@ -5,8 +5,8 @@ import { NextRequest, NextResponse } from "next/server";
 export const POST = async (req: NextRequest) => {
   try {
     const data = await req.json();
-    console.log(data);
     const testSchema = await UserTestDetailSchema.safeParse(data);
+
     if (!testSchema.success) {
       return NextResponse.json({
         msg: testSchema.error.format(),
@@ -14,37 +14,33 @@ export const POST = async (req: NextRequest) => {
         data: null,
       });
     }
+
     const testDetails = testSchema.data;
-    const findUser = await prisma.user.findUnique({
-      where: {
-        id: testDetails.userId,
-      },
-    });
-    if (!findUser) {
-      return NextResponse.json({
-        msg: "Invalid user",
-        err: true,
-        data: null,
+    // Fetch questions in the specified order for SIMULATION
+    let selectedQuestions;
+    if (testDetails.testType === "SIMULATION") {
+      // Fetch the first 50 single-answer questions
+      console.log("inside");
+      const singleAnswerQuestions = await prisma.question.findMany({
+        where: { categoryId: testDetails.categoryId, isMultipleAnswer: false },
+        take: 50,
+      });
+
+      const multipleAnswerQuestions = await prisma.question.findMany({
+        where: { categoryId: testDetails.categoryId, isMultipleAnswer: true },
+        take: 150,
+      });
+
+      selectedQuestions = [
+        ...singleAnswerQuestions,
+        ...multipleAnswerQuestions,
+      ];
+    } else {
+      selectedQuestions = await prisma.question.findMany({
+        where: { categoryId: testDetails.categoryId },
+        take: testDetails.numberOfQuestions,
       });
     }
-    const category = await prisma.category.findUnique({
-      where: {
-        id: testDetails.categoryId,
-      },
-    });
-    if (!category) {
-      return NextResponse.json({
-        msg: "Invalid categoryID",
-        err: true,
-        data: null,
-      });
-    }
-    const selectedQuestions = await prisma.question.findMany({
-      where: {
-        categoryId: testDetails.categoryId,
-      },
-      take: testDetails.numberOfQuestions,
-    });
 
     const userTestDetail = await prisma.userTestDetail.create({
       data: {
@@ -53,35 +49,26 @@ export const POST = async (req: NextRequest) => {
         numberOfQuestions: selectedQuestions.length,
         duration: testDetails.isTimed ? testDetails.duration : 0,
         isCompleted: false,
+        isTimed: testDetails.isTimed,
+        testType: testDetails.testType,
         questions: {
           connect: selectedQuestions.map((question) => ({ id: question.id })),
         },
-        isTimed: testDetails.isTimed,
       },
       select: {
         id: true,
-        questions: {
-          select: {
-            id: true,
-            title: true,
-            choice: {
-              select: {
-                id: true,
-                text: true,
-              },
-            },
-          },
-        },
       },
     });
+
     return NextResponse.json({
       msg: "Successfully created",
       err: false,
       data: userTestDetail.id,
     });
   } catch (error) {
+    console.error("Error while creating test details:", error);
     return NextResponse.json({
-      msg: "Something went wrong",
+      msg: "Something went wrong while creating test details",
       err: true,
       data: null,
     });

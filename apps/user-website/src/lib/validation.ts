@@ -1,9 +1,11 @@
 import { z } from "zod";
+const TestTypeEnum = z.enum(["TIMER", "NOTIMER", "SIMULATION"]);
 
 const UserTestDetailSchema = z
   .object({
     userId: z.string().min(1, "User ID is required"),
     isTimed: z.boolean(),
+    testType: TestTypeEnum,
     duration: z.number().optional(),
     correctAnswers: z
       .string()

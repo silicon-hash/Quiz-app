@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { toast } from 'sonner';
-import { useParams } from 'next/navigation';
+import React, { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { useParams } from "next/navigation";
 
 interface Question {
   id: string;
@@ -35,18 +35,23 @@ const TestResults: React.FC = () => {
         setIsLoading(true);
         const response = await fetch(`/api/test/${testId}`);
         const data = await response.json();
-        
+
         if (data.err) {
           throw new Error(data.msg);
         }
-        
+
         const { questions: fetchedQuestions, userAnswers } = data.data;
         setQuestions(fetchedQuestions);
-        
-        const correctAnswers = fetchedQuestions.reduce((count: number, question: any, index: number) => {
-          const isCorrect = JSON.stringify(question.answer.sort()) === JSON.stringify(userAnswers[index].sort());
-          return count + (isCorrect ? 1 : 0);
-        }, 0);
+
+        const correctAnswers = fetchedQuestions.reduce(
+          (count: number, question: any, index: number) => {
+            const isCorrect =
+              JSON.stringify(question.answer.sort()) ===
+              JSON.stringify(userAnswers[index].sort());
+            return count + (isCorrect ? 1 : 0);
+          },
+          0
+        );
 
         const score = (correctAnswers / fetchedQuestions.length) * 100;
 
@@ -57,10 +62,10 @@ const TestResults: React.FC = () => {
           userAnswers,
         });
 
-        toast.success('Test results loaded successfully!');
+        toast.success("Test results loaded successfully!");
       } catch (error) {
-        console.error('Failed to load test results:', error);
-        toast.error('Failed to load test results');
+        console.error("Failed to load test results:", error);
+        toast.error("Failed to load test results");
       } finally {
         setIsLoading(false);
       }
@@ -73,7 +78,9 @@ const TestResults: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 dark:border-gray-100"></div>
-        <div className="text-center mt-4 text-xl font-semibold">Loading test results...</div>
+        <div className="text-center mt-4 text-xl font-semibold">
+          Loading test results...
+        </div>
       </div>
     );
   }
@@ -92,8 +99,13 @@ const TestResults: React.FC = () => {
           <p>Score: {testResult.score.toFixed(2)}%</p>
           <div className="mt-6">
             {questions.map((question, index) => (
-              <div key={question.id} className="mb-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                <h3 className="text-xl font-semibold mb-2">Question {index + 1}</h3>
+              <div
+                key={question.id}
+                className="mb-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg"
+              >
+                <h3 className="text-xl font-semibold mb-2">
+                  Question {index + 1}
+                </h3>
                 <p className="mb-2">{question.question}</p>
                 <div className="space-y-2">
                   {question.choice.map((choice) => (
@@ -101,17 +113,21 @@ const TestResults: React.FC = () => {
                       key={choice.id}
                       className={`p-2 rounded ${
                         testResult.correctAnswersIds[index]?.includes(choice.id)
-                          ? 'bg-green-200 dark:bg-green-700'
+                          ? "bg-green-200 dark:bg-green-700"
                           : testResult.userAnswers[index]?.includes(choice.id)
-                          ? 'bg-red-200 dark:bg-red-700'
-                          : 'bg-white dark:bg-gray-700'
+                            ? "bg-red-200 dark:bg-red-700"
+                            : "bg-white dark:bg-gray-700"
                       }`}
                     >
                       {choice.text}
-                      {testResult.correctAnswersIds[index]?.includes(choice.id) && ' ✓'}
+                      {testResult.correctAnswersIds[index]?.includes(
+                        choice.id
+                      ) && " ✓"}
                       {testResult.userAnswers[index]?.includes(choice.id) &&
-                        !testResult.correctAnswersIds[index]?.includes(choice.id) &&
-                        ' ✗'}
+                        !testResult.correctAnswersIds[index]?.includes(
+                          choice.id
+                        ) &&
+                        " ✗"}
                     </div>
                   ))}
                 </div>

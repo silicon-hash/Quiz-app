@@ -55,13 +55,17 @@ export default function Home() {
 
   const startTest = (isExamSimulation = false) => {
     setIsStartingTest(true);
-
     let testConfig = {
       userId: (session.data?.user as any)?.id,
       isTimed: isTimedTest !== null ? isTimedTest : true,
       duration: testDuration ? Math.round(testDuration * 3600) : 0, // Convert hours to seconds and round
       numberOfQuestions: questionCount || 0,
       categoryId: selectedCategory || "",
+      testType: isExamSimulation
+        ? "SIMULATION"
+        : isTimedTest !== null
+          ? "TIMER"
+          : "NOTIMER",
     };
 
     if (isExamSimulation) {
@@ -75,14 +79,15 @@ export default function Home() {
 
     if (!testConfig.userId) {
       console.error("User ID not found in session data");
+      toast.warning("Login again to fix this issue");
       return;
     }
 
     axios
       .post("/api/createtest", testConfig)
       .then((response) => {
-        console.log(response.data);
-        if (response.data) {
+        console.log(response.data.err);
+        if (!response.data.err) {
           const testId = response.data.data;
           console.log("testId", testId);
           router.push(`/test/${testId}`);
