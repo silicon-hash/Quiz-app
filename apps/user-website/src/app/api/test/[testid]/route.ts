@@ -8,104 +8,145 @@ export const GET = async (
   }: {
     params: {
       testid: string;
+      testType: string;
     };
   }
 ) => {
   try {
-    if (!params.testid) {
-      return NextResponse.json({
-        msg: "Id Not Sent",
-        err: true,
-        data: null,
-      });
-    }
-
-    const testDetail = await prisma.userTestDetail.findUnique({
-      where: {
-        id: params.testid,
-      },
-      select: {
-        isCompleted: true,
-        questions: {
-          select: {
-            id: true,
-            question: true,
-            choice: {
-              select: {
-                id: true,
-                text: true,
+    if (params.testType === "TIMER" || params.testType === "NOTIMER") {
+      const testData = await prisma.userTestDetail.findUnique({
+        where: {
+          id: params.testid,
+          testType: params.testType,
+        },
+        select: {
+          isCompleted: true,
+          question: {
+            select: {
+              id: true,
+              question: true,
+              choice: {
+                select: {
+                  id: true,
+                  text: true,
+                },
               },
+              answer: true,
             },
           },
+          duration: true,
+          userAnswers: true,
+          isTimed: true,
+          numberOfQuestions: true,
+          id: true,
+          testType: true,
+          score: true,
+          correctAnswers: true,
+          incorrectAnswers: true,
+          totalTimeTaken: true,
+          accuracy: true,
         },
-        isTimed: true,
-        duration: true,
-        createdAt: true,
-      },
-    });
-
-    if (!testDetail) {
-      return NextResponse.json({
-        msg: "Invalid ID",
-        err: true,
-        data: null,
       });
-    }
 
-    // Define responseData with optional correctAnswers and userAnswers
-    let responseData: {
-      isTimed: boolean;
-      duration: number | null;
-      createdAt: Date;
-      questions: {
-        id: string;
-        question: string;
-        choice: {
-          id: string;
-          text: string;
-        }[];
-      }[];
-      correctAnswers?: string; // Make it optional
-      userAnswers?: string[][]; // Make it optional
-      isCompleted: boolean;
-    } = {
-      isTimed: testDetail.isTimed,
-      duration: testDetail.duration,
-      createdAt: testDetail.createdAt,
-      questions: testDetail.questions,
-      isCompleted: testDetail.isCompleted,
-    };
+      if (!testData) {
+        return NextResponse.json({
+          msg: "Invalid test id",
+          err: true,
+          data: null,
+        });
+      }
 
-    if (testDetail.isCompleted) {
-      const data = await prisma.userTestDetail.findUnique({
+      const responseData = testData.isCompleted
+        ? testData
+        : {
+            ...testData,
+            question: testData.question.map(({ answer, ...rest }) => rest),
+            userAnswers: [],
+            // Exclude stats if not completed
+            score: undefined,
+            correctAnswers: undefined,
+            incorrectAnswers: undefined,
+            totalTimeTaken: undefined,
+            accuracy: undefined,
+          };
+
+      return NextResponse.json({
+        msg: "Fetched the test details",
+        err: false,
+        data: responseData,
+      });
+    } else {
+      const testDetail = await prisma.simulationTestDetail.findUnique({
         where: {
           id: params.testid,
         },
         select: {
-          questions: {
+          isCompleted: true,
+          singleQuestion: {
             select: {
-              choice: true,
+              title: true,
+              choice: {
+                select: {
+                  id: true,
+                  text: true,
+                },
+              },
               answer: true,
-              question: true,
+            },
+          },
+          multipleQuestion: {
+            select: {
+              title: true,
+              choice: {
+                select: {
+                  id: true,
+                  text: true,
+                },
+              },
+              answer: true,
             },
           },
           userAnswers: true,
-          isCompleted: true,
+          score: true,
+          correctAnswers: true,
+          incorrectAnswers: true,
+          totalTimeTaken: true,
+          accuracy: true,
         },
       });
 
+      if (!testDetail) {
+        return NextResponse.json({
+          msg: "Invalid testId",
+          err: true,
+          data: null,
+        });
+      }
+
+      const responseData = testDetail.isCompleted
+        ? testDetail
+        : {
+            ...testDetail,
+            singleQuestion: testDetail.singleQuestion.map(
+              ({ answer, ...rest }) => rest
+            ),
+            multipleQuestion: testDetail.multipleQuestion.map(
+              ({ answer, ...rest }) => rest
+            ),
+            userAnswers: [],
+            score: undefined,
+            correctAnswers: undefined,
+            incorrectAnswers: undefined,
+            totalTimeTaken: undefined,
+            accuracy: undefined,
+          };
+
       return NextResponse.json({
-        msg: "ALL good",
+        msg: "Fetched the test details",
         err: false,
-        data,
+        data: responseData,
       });
     }
-
-    return NextResponse.json({
-      msg: "ALL good",
-      err: false,
-      data: responseData,
-    });
   } catch (error) {
     return NextResponse.json({
       msg: "Something went wrong while fetching",
@@ -115,78 +156,114 @@ export const GET = async (
   }
 };
 
-interface UserTestPostData {
-  userAnswers: string[][];
-}
-
-export const POST = async (
-  req: NextRequest,
-  {
-    params,
-  }: {
-    params: {
-      testid: string;
-    };
-  }
-) => {
+export const POST = async (req: NextRequest) => {
   try {
-    const { userAnswers }: UserTestPostData = await req.json();
-    console.log("asdasdasd", userAnswers);
-    const userTestDetail = await prisma.userTestDetail.findUnique({
-      where: {
-        id: params.testid,
-      },
-      include: {
-        questions: true,
-      },
-    });
-    if (!userTestDetail) {
+    const { testid, testType, answers } = await req.json();
+
+    if (!testid || !testType || !Array.isArray(answers)) {
       return NextResponse.json({
-        msg: "Test not found",
+        msg: "Invalid data provided",
         err: true,
         data: null,
       });
     }
-    let correctAnswersCount = 0;
-    userTestDetail.questions.forEach((question, index) => {
+
+    let testData;
+
+    // Fetch the test data based on test type
+    if (testType === "SIMULATION") {
+      testData = await prisma.simulationTestDetail.findUnique({
+        where: { id: testid },
+        select: {
+          singleQuestion: { select: { id: true, answer: true } },
+          multipleQuestion: { select: { id: true, answer: true } },
+        },
+      });
+    } else {
+      testData = await prisma.userTestDetail.findUnique({
+        where: { id: testid },
+        select: {
+          question: { select: { id: true, answer: true } },
+        },
+      });
+    }
+
+    if (!testData) {
+      return NextResponse.json({
+        msg: "Invalid test ID or test not found",
+        err: true,
+        data: null,
+      });
+    }
+
+    const questions =
+      testType === "SIMULATION"
+        ? //@ts-ignore
+          [...testData.singleQuestion, ...testData.multipleQuestion]
+        : //@ts-ignore
+          testData.question;
+
+    let correctAnswers = 0;
+
+    //@ts-ignore
+    questions.forEach((question, index) => {
       const correctAnswerIds = question.answer;
-      const userSubmittedAnswerIds = userAnswers[index];
+      const userAnswerIds = answers[index] || [];
 
-      if (Array.isArray(correctAnswerIds)) {
-        if (
-          JSON.stringify(correctAnswerIds.sort()) ===
-          JSON.stringify(userSubmittedAnswerIds!.sort())
-        ) {
-          correctAnswersCount++;
-        }
-      }
+      const isCorrect =
+        correctAnswerIds.length === userAnswerIds.length &&
+        correctAnswerIds.every((id: any) => userAnswerIds.includes(id));
+
+      if (isCorrect) correctAnswers++;
     });
 
-    const totalQuestions = userTestDetail.questions.length;
-    const score = (correctAnswersCount / totalQuestions) * 100;
-    await prisma.userTestDetail.update({
-      where: {
-        id: params.testid,
-      },
-      data: {
-        userAnswers: userAnswers,
-        correctAnswers: correctAnswersCount.toString(),
-        isCompleted: true,
-      },
-    });
+    // Calculate score and accuracy
+    const score = (correctAnswers / questions.length) * 100;
+    const accuracy = (correctAnswers / answers.length) * 100;
+
+    // Update the test record with the results
+    if (testType === "SIMULATION") {
+      await prisma.simulationTestDetail.update({
+        where: { id: testid },
+        data: {
+          userAnswers: answers,
+          isCompleted: true,
+          score,
+          correctAnswers,
+          incorrectAnswers: questions.length - correctAnswers,
+          accuracy,
+          totalTimeTaken: 0,
+        },
+      });
+    } else {
+      await prisma.userTestDetail.update({
+        where: { id: testid },
+        data: {
+          userAnswers: answers,
+          isCompleted: true,
+          score,
+          correctAnswers,
+          incorrectAnswers: questions.length - correctAnswers,
+          accuracy,
+          totalTimeTaken: 0,
+        },
+      });
+    }
 
     return NextResponse.json({
-      msg: "Test completed successfully",
+      msg: "Test results updated successfully",
       err: false,
       data: {
-        totalQuestions: totalQuestions,
-        correctAnswers: correctAnswersCount,
-        score: score,
+        score,
+        correctAnswers,
+        incorrectAnswers: questions.length - correctAnswers,
+        accuracy,
       },
     });
   } catch (error) {
+    console.error("Error updating test results:", error);
     return NextResponse.json({
-      msg: "Something went wrong",
+      msg: "Something went wrong while updating test results",
       err: true,
       data: null,
     });

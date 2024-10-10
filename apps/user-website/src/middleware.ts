@@ -10,7 +10,7 @@ export async function middleware(req: NextRequest) {
     req: req as any,
     secret: "m8bVR7LDvLw+dXJ5wzD9zPDnFLIopKVNvUXg/pGBcO0=",
   });
-
+  console.log("middleware");
   const { pathname } = req.nextUrl;
 
   if (token && pathname === loginRoute) {

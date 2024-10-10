@@ -28,6 +28,9 @@ model User {
   @@index([id])
 }
 
+
+
+
 model Admin {
     id                String    @id @default(uuid()) @unique
     email             String    @unique
@@ -56,44 +59,75 @@ model Category {
   @@index([id])
 }
 
+model UserTestDetail {
+  id                 String    @id @default(cuid()) @unique
+  userId             String
+  question           Question[]
+  userAnswers        Json?
+  isTimed            Boolean   @default(false)
+  duration           Int?
+  numberOfQuestions  Int
+  isCompleted        Boolean   @default(false)
+  categoryId         String
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  testType           TestType
+
+   score              Float?    // Percentage score
+  correctAnswers     Int?      // Number of correct answers
+  incorrectAnswers   Int?      // Number of incorrect answers
+  totalTimeTaken     Int?      // Total time taken (in seconds)
+  accuracy           Float?    // Accuracy rate
+
+  category Category @relation(fields: [categoryId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@index([id])
+  @@index([userId])
+}
+
+
+model SimulationTestDetail{
+    id                 String    @id @default(cuid()) @unique
+    userId             String
+    singleQuestion   Question[] @relation("SingleQuestionSimulation")
+    multipleQuestion Question[] @relation("MultipleQuestionSimulation")
+    userAnswers        Json?
+    isCompleted        Boolean   @default(false)
+    duration           Int?
+    numberOfQuestions  Int
+    testType           TestType @default(SIMULATION)
+
+   score              Float?    // Percentage score
+  correctAnswers     Int?      // Number of correct answers
+  incorrectAnswers   Int?      // Number of incorrect answers
+  totalTimeTaken     Int?      // Total time taken (in seconds)
+  accuracy           Float?    // Accuracy rate
+
+    createdAt         DateTime  @default(now())
+    updatedAt         DateTime  @updatedAt
+
+    @@index([id,userId])
+}
+
 model Question {
-  id              String    @id @default(uuid()) @unique
-  title           String
-  categoryId      String
-  question        String
-  choice          Choices[]  
-  answer          String[]  
-  isMultipleAnswer Boolean   @default(false)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  category        Category  @relation(fields: [categoryId], references: [id])
-  userTestDetails UserTestDetail[] @relation("UserTestQuestions")
+  id                String    @id @default(uuid()) @unique
+  title             String
+  categoryId        String
+  question          String
+  choice            Choices[]
+  answer            String[]
+  isMultipleAnswer  Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  category          Category  @relation(fields: [categoryId], references: [id])
+  UserTestDetail UserTestDetail[]
+  SimulationSingle    SimulationTestDetail[] @relation("SingleQuestionSimulation")
+  SimulationMultiple  SimulationTestDetail[] @relation("MultipleQuestionSimulation")
 
   @@index([id])
   @@index([isMultipleAnswer])
   @@index([categoryId])
-}
-
-model UserTestDetail{
-  id String @id @default(cuid()) @unique
-  userId    String
-  questions       Question[] @relation("UserTestQuestions")  // Many-to-many relation to Question
-  userAnswers     Json?
-  isTimed         Boolean  @default(false)
-  duration       Int?             
-  correctAnswers  String?
-  numberOfQuestions Int
-  isCompleted      Boolean  @default(false)  
-  categoryId     String
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  testType        TestType   
-  
-  category Category  @relation(fields: [categoryId],references: [id])
-  user User  @relation(fields: [userId],references: [id])
-
-  @@index([id])
-  @@index([userId])
 }
 
 model Choices {
@@ -126,7 +160,7 @@ model Account {
   scope              String?
   id_token           String? @db.Text
   session_state      String?
- 
+  
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
  
   @@unique([provider, providerAccountId])
