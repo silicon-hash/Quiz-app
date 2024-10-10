@@ -31,6 +31,12 @@ export const GET = async (
             numberOfQuestions: true,
           },
         },
+        SimulationTestDetail: {
+          select: {
+            isCompleted: true,
+            correctAnswers: true,
+          },
+        },
       },
     });
 

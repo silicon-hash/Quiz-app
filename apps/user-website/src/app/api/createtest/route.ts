@@ -60,6 +60,7 @@ export const POST = async (req: NextRequest) => {
               id: question.id,
             })),
           },
+          categoryId: testDetails.categoryId,
         },
         select: {
           id: true,
