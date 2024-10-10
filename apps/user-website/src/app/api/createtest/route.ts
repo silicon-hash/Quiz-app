@@ -87,6 +87,8 @@ export const POST = async (req: NextRequest) => {
             },
           },
           testType: true,
+          createdAt: true,
+          duration: true,
         },
       });
 
@@ -105,6 +107,8 @@ export const POST = async (req: NextRequest) => {
           })
         ),
         testType: simulationTestDetail.testType,
+        createdAt: simulationTestDetail.createdAt,
+        duration: simulationTestDetail.duration,
       };
 
       return NextResponse.json({
@@ -146,6 +150,8 @@ export const POST = async (req: NextRequest) => {
             },
           },
           testType: true,
+          createdAt: true,
+          duration: true,
         },
       });
 
@@ -156,6 +162,8 @@ export const POST = async (req: NextRequest) => {
           choice: choice.map(({ id, text }) => ({ id, text })),
         })),
         testType: userTestDetail.testType,
+        createdAt: userTestDetail.createdAt,
+        duration: userTestDetail.duration,
       };
 
       return NextResponse.json({

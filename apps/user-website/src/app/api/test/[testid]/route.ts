@@ -45,6 +45,7 @@ export const GET = async (
           incorrectAnswers: true,
           totalTimeTaken: true,
           accuracy: true,
+          createdAt: true,
         },
       });
 
@@ -62,7 +63,6 @@ export const GET = async (
             ...testData,
             question: testData.question.map(({ answer, ...rest }) => rest),
             userAnswers: [],
-            // Exclude stats if not completed
             score: undefined,
             correctAnswers: undefined,
             incorrectAnswers: undefined,
@@ -112,6 +112,7 @@ export const GET = async (
           incorrectAnswers: true,
           totalTimeTaken: true,
           accuracy: true,
+          createdAt: true,
         },
       });
 
@@ -177,6 +178,8 @@ export const POST = async (req: NextRequest) => {
         select: {
           singleQuestion: { select: { id: true, answer: true } },
           multipleQuestion: { select: { id: true, answer: true } },
+          createdAt: true,
+          duration: true,
         },
       });
     } else {
@@ -184,6 +187,8 @@ export const POST = async (req: NextRequest) => {
         where: { id: testid },
         select: {
           question: { select: { id: true, answer: true } },
+          createdAt: true,
+          duration: true,
         },
       });
     }
