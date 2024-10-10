@@ -1,0 +1,10 @@
+{
+  "/api/categorys/route": "app/api/categorys/route.js",
+  "/api/testhistory/[userId]/route": "app/api/testhistory/[userId]/route.js",
+  "/api/test/[testid]/[testType]/route": "app/api/test/[testid]/[testType]/route.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/(authenitcated)/page": "app/(authenitcated)/page.js",
+  "/(authenitcated)/test/[testId]/page": "app/(authenitcated)/test/[testId]/page.js",
+  "/(authenitcated)/test/[testId]/results/page": "app/(authenitcated)/test/[testId]/results/page.js",
+  "/(authenitcated)/history/page": "app/(authenitcated)/history/page.js"
+}
