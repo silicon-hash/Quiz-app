@@ -37,3 +37,4 @@
         # Misc
         .DS_Store
         *.pem
+node_modules

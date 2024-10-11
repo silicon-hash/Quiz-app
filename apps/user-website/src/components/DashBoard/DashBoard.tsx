@@ -40,6 +40,18 @@ export default function Home() {
 
 
   useEffect(() => {
+    setTestData(null);
+    setSimulationTestData(null);
+  
+    // // Clear all test-related data from local storage
+    // Object.keys(localStorage).forEach(key => {
+    //   if (key.startsWith('testData_') || 
+    //       key.startsWith('simulationTestData_') || 
+    //       key.startsWith('testProgress_')) {
+    //     localStorage.removeItem(key);
+    //   }
+    // });
+  
     const fetchCategories = async () => {
       try {
         const response = await axios.get("/api/categorys");
@@ -54,7 +66,7 @@ export default function Home() {
         setIsLoading(false);
       }
     };
-
+  
     fetchCategories();
   }, []);
 
@@ -103,14 +115,16 @@ export default function Home() {
         if (!response.data.err) {
           const testId = response.data.data;
           console.log("testId", testId);
+
+          const testIdWithIsCompleted = {...testId,isCompleted:false};
           if (isExamSimulation) {
-            console.log("testId", testId);
-            setSimulationTestData(testId);
+            console.log("testId", testIdWithIsCompleted);
+            setSimulationTestData(testIdWithIsCompleted);
           } else {
-            setTestData(testId);
+            setTestData(testIdWithIsCompleted)
           }
-          localStorage.setItem("testData_"+testId.id, JSON.stringify(testId));
-          router.push(`/test/${testId.id}`);
+          localStorage.setItem("testData_"+testId.id, JSON.stringify(testIdWithIsCompleted));
+          router.push(`/test/${testId.id}?type=${testConfig.testType}`);
         } else {
           console.error("Failed to create test:", response.data.error);
         }
