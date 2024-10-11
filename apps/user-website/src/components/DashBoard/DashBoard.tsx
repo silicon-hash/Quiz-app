@@ -5,6 +5,8 @@ import { useSession } from "next-auth/react";
 import { authOptions } from "@/src/lib/auth";
 import axios from "axios";
 import { toast } from "sonner";
+import { useTestContext } from "@/components/context/TestContext";
+import { useSimulationTestContext } from "@/components/context/SimulationTestContext";
 
 export default function Home() {
   const router = useRouter();
@@ -32,9 +34,24 @@ export default function Home() {
   >("hours");
   const [isStartingTest, setIsStartingTest] = useState(false);
   const questionOptions = [25, 50, 75];
-  const timeOptions = [1, 2, 3, 4]; // Hours
+  const timeOptions = [1, 2, 3, 4];
+  const { setTestData } = useTestContext();
+  const { setSimulationTestData } = useSimulationTestContext();
+
 
   useEffect(() => {
+    setTestData(null);
+    setSimulationTestData(null);
+  
+    // // Clear all test-related data from local storage
+    // Object.keys(localStorage).forEach(key => {
+    //   if (key.startsWith('testData_') || 
+    //       key.startsWith('simulationTestData_') || 
+    //       key.startsWith('testProgress_')) {
+    //     localStorage.removeItem(key);
+    //   }
+    // });
+  
     const fetchCategories = async () => {
       try {
         const response = await axios.get("/api/categorys");
@@ -49,12 +66,17 @@ export default function Home() {
         setIsLoading(false);
       }
     };
-
+  
     fetchCategories();
   }, []);
 
   const startTest = (isExamSimulation = false) => {
     setIsStartingTest(true);
+    console.log("isExamSimulation", isExamSimulation);
+    console.log("isTimedTest", isTimedTest);
+    console.log("testDuration", testDuration);
+    console.log("questionCount", questionCount);
+    console.log("selectedCategory", selectedCategory);
     let testConfig = {
       userId: (session.data?.user as any)?.id,
       isTimed: isTimedTest !== null ? isTimedTest : true,
@@ -63,10 +85,11 @@ export default function Home() {
       categoryId: selectedCategory || "",
       testType: isExamSimulation
         ? "SIMULATION"
-        : isTimedTest !== null
+        : isTimedTest
           ? "TIMER"
           : "NOTIMER",
     };
+
 
     if (isExamSimulation) {
       testConfig = {
@@ -83,6 +106,8 @@ export default function Home() {
       return;
     }
 
+    console.log("testConfig", testConfig);
+
     axios
       .post("/api/createtest", testConfig)
       .then((response) => {
@@ -90,7 +115,16 @@ export default function Home() {
         if (!response.data.err) {
           const testId = response.data.data;
           console.log("testId", testId);
-          router.push(`/test/${testId}`);
+
+          const testIdWithIsCompleted = {...testId,isCompleted:false};
+          if (isExamSimulation) {
+            console.log("testId", testIdWithIsCompleted);
+            setSimulationTestData(testIdWithIsCompleted);
+          } else {
+            setTestData(testIdWithIsCompleted)
+          }
+          localStorage.setItem("testData_"+testId.id, JSON.stringify(testIdWithIsCompleted));
+          router.push(`/test/${testId.id}?type=${testConfig.testType}`);
         } else {
           console.error("Failed to create test:", response.data.error);
         }
